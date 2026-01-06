@@ -11,9 +11,23 @@ from abc import ABC, abstractmethod
 
 
 # Настройка логирования
+import os
+from datetime import datetime
+
+# Создаём папку для логов, если её нет
+log_dir = "logs"
+if not os.path.exists(log_dir):
+    os.makedirs(log_dir)
+
+# Настройка логирования в файл и консоль
+log_file = os.path.join(log_dir, f"chatlist_{datetime.now().strftime('%Y%m%d')}.log")
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(log_file, encoding='utf-8'),
+        logging.StreamHandler()
+    ]
 )
 logger = logging.getLogger(__name__)
 
@@ -282,13 +296,88 @@ class GroqProvider(APIProvider):
             return ""
 
 
+class OpenRouterProvider(APIProvider):
+    """Провайдер для OpenRouter API."""
+    
+    def send_request(self, prompt: str, model: Optional[str] = None) -> Dict[str, Any]:
+        """Отправить запрос к OpenRouter API."""
+        if not model:
+            model = "openai/gpt-3.5-turbo"
+        
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://github.com/yourusername/chatlist",  # Опционально
+            "X-Title": "ChatList"  # Опционально
+        }
+        
+        data = {
+            "model": model,
+            "messages": [
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.7
+        }
+        
+        try:
+            logger.info(f"Sending request to OpenRouter API (model: {model})")
+            response = requests.post(
+                self.api_url,
+                headers=headers,
+                json=data,
+                timeout=self.timeout
+            )
+            response.raise_for_status()
+            
+            text = self.parse_response(response)
+            
+            logger.info(f"OpenRouter API response received successfully")
+            return {
+                "success": True,
+                "text": text,
+                "raw_response": response.json()
+            }
+        except requests.exceptions.Timeout:
+            logger.error("OpenRouter API request timeout")
+            return {
+                "success": False,
+                "error": "Request timeout",
+                "text": ""
+            }
+        except requests.exceptions.RequestException as e:
+            logger.error(f"OpenRouter API request error: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "text": ""
+            }
+        except Exception as e:
+            logger.error(f"Unexpected error in OpenRouter API: {e}")
+            return {
+                "success": False,
+                "error": f"Unexpected error: {str(e)}",
+                "text": ""
+            }
+    
+    def parse_response(self, response: requests.Response) -> str:
+        """Парсить ответ от OpenRouter API."""
+        try:
+            data = response.json()
+            if "choices" in data and len(data["choices"]) > 0:
+                return data["choices"][0]["message"]["content"]
+            return ""
+        except (KeyError, IndexError, json.JSONDecodeError) as e:
+            logger.error(f"Error parsing OpenRouter response: {e}")
+            return ""
+
+
 def create_provider(provider_type: str, api_key: str, api_url: str, 
                    timeout: int = 30) -> Optional[APIProvider]:
     """
     Фабричная функция для создания провайдера API.
     
     Args:
-        provider_type: Тип провайдера ('openai', 'deepseek', 'groq')
+        provider_type: Тип провайдера ('openai', 'deepseek', 'groq', 'openrouter')
         api_key: API-ключ
         api_url: URL API
         timeout: Таймаут запроса
@@ -304,6 +393,8 @@ def create_provider(provider_type: str, api_key: str, api_url: str,
         return DeepSeekProvider(api_key, api_url, timeout)
     elif provider_type == 'groq':
         return GroqProvider(api_key, api_url, timeout)
+    elif provider_type == 'openrouter':
+        return OpenRouterProvider(api_key, api_url, timeout)
     else:
         logger.warning(f"Unknown provider type: {provider_type}")
         return None
@@ -321,7 +412,9 @@ def detect_provider_type(api_url: str) -> str:
     """
     api_url_lower = api_url.lower()
     
-    if 'openai' in api_url_lower:
+    if 'openrouter' in api_url_lower:
+        return 'openrouter'
+    elif 'openai' in api_url_lower:
         return 'openai'
     elif 'deepseek' in api_url_lower:
         return 'deepseek'

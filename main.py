@@ -320,19 +320,39 @@ class MainWindow(QMainWindow):
         # Отображаем результаты
         self.results_table.setRowCount(len(results))
         
+        success_count = 0
+        error_count = 0
+        
         for row, result in enumerate(results):
             # Модель
-            model_item = QTableWidgetItem(result.get('model_name', 'Unknown'))
+            model_name = result.get('model_name', 'Unknown')
+            model_item = QTableWidgetItem(model_name)
+            
+            # Окрашиваем строку в зависимости от результата
+            if not result.get('success', False):
+                model_item.setForeground(Qt.red)
+                error_count += 1
+            else:
+                success_count += 1
+            
             self.results_table.setItem(row, 0, model_item)
             
             # Ответ
-            response_text = result.get('text', result.get('error', 'Ошибка получения ответа'))
+            if result.get('success', False):
+                response_text = result.get('text', '')
+            else:
+                error_msg = result.get('error', 'Ошибка получения ответа')
+                response_text = f"ОШИБКА: {error_msg}"
+            
             response_item = QTableWidgetItem(response_text)
+            if not result.get('success', False):
+                response_item.setForeground(Qt.red)
             self.results_table.setItem(row, 1, response_item)
             
-            # Чекбокс
+            # Чекбокс (только для успешных ответов)
             checkbox = QCheckBox()
             checkbox.setChecked(False)
+            checkbox.setEnabled(result.get('success', False))  # Отключаем для ошибок
             checkbox.stateChanged.connect(self.on_checkbox_changed)
             self.results_table.setCellWidget(row, 2, checkbox)
         
@@ -342,7 +362,15 @@ class MainWindow(QMainWindow):
         self.load_saved_prompts()
         
         self.save_button.setEnabled(True)
-        self.statusBar.showMessage(f"Получено ответов: {len(results)}")
+        
+        # Показываем статистику
+        status_msg = f"Успешно: {success_count}, Ошибок: {error_count}"
+        if error_count > 0:
+            QMessageBox.warning(
+                self, "Предупреждение",
+                f"Некоторые запросы завершились с ошибками.\n\n{status_msg}\n\nПроверьте логи в папке logs/ для подробностей."
+            )
+        self.statusBar.showMessage(status_msg)
     
     def on_checkbox_changed(self):
         """Обработчик изменения чекбоксов."""
@@ -386,17 +414,44 @@ class MainWindow(QMainWindow):
     
     def manage_models(self):
         """Управление моделями."""
-        from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTableWidget, QTableWidgetItem
+        from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTableWidget, QTableWidgetItem, QLineEdit, QLabel
         
         dialog = QDialog(self)
         dialog.setWindowTitle("Управление моделями")
         dialog.setModal(True)
+        dialog.resize(900, 600)
         layout = QVBoxLayout()
+        
+        # Поиск
+        search_layout = QHBoxLayout()
+        search_layout.addWidget(QLabel("Поиск:"))
+        search_input = QLineEdit()
+        search_input.setPlaceholderText("Введите название модели для поиска...")
+        search_layout.addWidget(search_input)
+        layout.addLayout(search_layout)
         
         # Таблица моделей
         table = QTableWidget()
         table.setColumnCount(5)
         table.setHorizontalHeaderLabels(["ID", "Название", "API URL", "API ID", "Активна"])
+        table.setSortingEnabled(True)
+        table.horizontalHeader().setStretchLastSection(True)
+        table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+        table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeToContents)
+        table.setAlternatingRowColors(True)
+        
+        def filter_table(text):
+            """Фильтрация таблицы по поисковому запросу."""
+            for row in range(table.rowCount()):
+                item = table.item(row, 1)  # Поиск по названию
+                if item:
+                    match = text.lower() in item.text().lower()
+                    table.setRowHidden(row, not match)
+        
+        search_input.textChanged.connect(filter_table)
         
         models = self.db.get_all_models()
         table.setRowCount(len(models))
@@ -484,19 +539,47 @@ class MainWindow(QMainWindow):
     
     def manage_prompts(self):
         """Управление промтами."""
-        from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTableWidget, QTableWidgetItem
+        from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTableWidget, QTableWidgetItem, QLineEdit, QLabel
         
         dialog = QDialog(self)
         dialog.setWindowTitle("Управление промтами")
         dialog.setModal(True)
-        dialog.resize(800, 600)
+        dialog.resize(900, 600)
         layout = QVBoxLayout()
+        
+        # Поиск
+        search_layout = QHBoxLayout()
+        search_layout.addWidget(QLabel("Поиск:"))
+        search_input = QLineEdit()
+        search_input.setPlaceholderText("Введите текст для поиска по промтам или тегам...")
+        search_layout.addWidget(search_input)
+        layout.addLayout(search_layout)
         
         # Таблица промтов
         table = QTableWidget()
         table.setColumnCount(4)
         table.setHorizontalHeaderLabels(["ID", "Дата", "Промт", "Теги"])
+        table.setSortingEnabled(True)
         table.horizontalHeader().setStretchLastSection(True)
+        table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+        table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        table.setAlternatingRowColors(True)
+        
+        def filter_table(text):
+            """Фильтрация таблицы по поисковому запросу."""
+            for row in range(table.rowCount()):
+                prompt_item = table.item(row, 2)
+                tags_item = table.item(row, 3)
+                match = False
+                if prompt_item and text.lower() in prompt_item.text().lower():
+                    match = True
+                if tags_item and text.lower() in tags_item.text().lower():
+                    match = True
+                table.setRowHidden(row, not match)
+        
+        search_input.textChanged.connect(filter_table)
         
         prompts = self.db.get_all_prompts()
         table.setRowCount(len(prompts))
@@ -580,19 +663,50 @@ class MainWindow(QMainWindow):
     
     def view_saved_results(self):
         """Просмотр сохранённых результатов."""
-        from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTableWidget, QTableWidgetItem
+        from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTableWidget, QTableWidgetItem, QLineEdit, QLabel
         
         dialog = QDialog(self)
         dialog.setWindowTitle("Сохранённые результаты")
         dialog.setModal(True)
-        dialog.resize(1000, 600)
+        dialog.resize(1200, 700)
         layout = QVBoxLayout()
+        
+        # Поиск
+        search_layout = QHBoxLayout()
+        search_layout.addWidget(QLabel("Поиск:"))
+        search_input = QLineEdit()
+        search_input.setPlaceholderText("Введите текст для поиска по промтам, моделям или ответам...")
+        search_layout.addWidget(search_input)
+        layout.addLayout(search_layout)
         
         # Таблица результатов
         table = QTableWidget()
         table.setColumnCount(4)
         table.setHorizontalHeaderLabels(["Дата", "Промт", "Модель", "Ответ"])
+        table.setSortingEnabled(True)
         table.horizontalHeader().setStretchLastSection(True)
+        table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        table.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)
+        table.setAlternatingRowColors(True)
+        
+        def filter_table(text):
+            """Фильтрация таблицы по поисковому запросу."""
+            for row in range(table.rowCount()):
+                prompt_item = table.item(row, 1)
+                model_item = table.item(row, 2)
+                response_item = table.item(row, 3)
+                match = False
+                if prompt_item and text.lower() in prompt_item.text().lower():
+                    match = True
+                if model_item and text.lower() in model_item.text().lower():
+                    match = True
+                if response_item and text.lower() in response_item.text().lower():
+                    match = True
+                table.setRowHidden(row, not match)
+        
+        search_input.textChanged.connect(filter_table)
         
         results = self.db.get_selected_results()
         table.setRowCount(len(results))
