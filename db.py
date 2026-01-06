@@ -50,9 +50,17 @@ class Database:
                 name TEXT NOT NULL UNIQUE,
                 api_url TEXT NOT NULL,
                 api_id TEXT NOT NULL,
+                model_name TEXT,
                 is_active INTEGER NOT NULL DEFAULT 1
             )
         """)
+        
+        # Добавляем колонку model_name, если её нет (для существующих БД)
+        try:
+            cursor.execute("ALTER TABLE models ADD COLUMN model_name TEXT")
+        except sqlite3.OperationalError:
+            # Колонка уже существует, игнорируем ошибку
+            pass
         
         # Таблица results
         cursor.execute("""
@@ -180,13 +188,13 @@ class Database:
     # ========== CRUD операции для models ==========
     
     def create_model(self, name: str, api_url: str, api_id: str, 
-                    is_active: int = 1) -> int:
+                    model_name: Optional[str] = None, is_active: int = 1) -> int:
         """Создать новую модель."""
         cursor = self.conn.cursor()
         cursor.execute("""
-            INSERT INTO models (name, api_url, api_id, is_active) 
-            VALUES (?, ?, ?, ?)
-        """, (name, api_url, api_id, is_active))
+            INSERT INTO models (name, api_url, api_id, model_name, is_active) 
+            VALUES (?, ?, ?, ?, ?)
+        """, (name, api_url, api_id, model_name, is_active))
         self.conn.commit()
         return cursor.lastrowid
     
@@ -211,7 +219,7 @@ class Database:
     
     def update_model(self, model_id: int, name: Optional[str] = None,
                     api_url: Optional[str] = None, api_id: Optional[str] = None,
-                    is_active: Optional[int] = None) -> bool:
+                    model_name: Optional[str] = None, is_active: Optional[int] = None) -> bool:
         """Обновить модель."""
         cursor = self.conn.cursor()
         updates = []
@@ -226,6 +234,9 @@ class Database:
         if api_id is not None:
             updates.append("api_id = ?")
             params.append(api_id)
+        if model_name is not None:
+            updates.append("model_name = ?")
+            params.append(model_name)
         if is_active is not None:
             updates.append("is_active = ?")
             params.append(is_active)

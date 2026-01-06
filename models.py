@@ -62,7 +62,13 @@ class ModelManager:
         """
         api_key = os.getenv(api_id)
         if not api_key:
-            logger.warning(f"API key not found for {api_id}")
+            logger.warning(f"API key not found for {api_id}. Check your .env file.")
+        elif api_key.strip() == "":
+            logger.warning(f"API key for {api_id} is empty. Check your .env file.")
+            return None
+        else:
+            # Логируем только факт загрузки, но не сам ключ
+            logger.debug(f"API key loaded for {api_id} (length: {len(api_key)})")
         return api_key
     
     def _get_provider(self, model: Dict) -> Optional[APIProvider]:
@@ -125,7 +131,15 @@ class ModelManager:
             }
         
         try:
-            result = provider.send_request(prompt)
+            # Используем model_name из БД, если указано и не пустое
+            # Если model_name не указано, используем имя модели из БД (name)
+            api_model_name = model.get('model_name')
+            if not api_model_name or api_model_name.strip() == '':
+                # Если model_name не указано, используем name как имя модели для API
+                # Это работает для случаев, когда name уже содержит правильное имя модели (например, "anthropic/claude-3-haiku")
+                api_model_name = model.get('name')
+            
+            result = provider.send_request(prompt, model=api_model_name)
             result["model_name"] = model['name']
             result["model_id"] = model['id']
             return result

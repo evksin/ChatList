@@ -5,6 +5,7 @@
 
 import sys
 from typing import List, Dict, Optional
+import markdown
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QTextEdit, QTableWidget, QTableWidgetItem,
@@ -68,6 +69,13 @@ class ModelDialog(QDialog):
             self.api_id_edit.setText(self.model_data.get('api_id', ''))
         layout.addWidget(self.api_id_edit)
         
+        # Model Name (имя модели для API, например, anthropic/claude-3-haiku)
+        layout.addWidget(QLabel("Model Name (имя модели для API, опционально):"))
+        self.model_name_edit = QLineEdit()
+        if self.model_data:
+            self.model_name_edit.setText(self.model_data.get('model_name', ''))
+        layout.addWidget(self.model_name_edit)
+        
         # Активна ли модель
         self.active_checkbox = QCheckBox("Активна")
         if self.model_data:
@@ -90,6 +98,7 @@ class ModelDialog(QDialog):
             'name': self.name_edit.text(),
             'api_url': self.url_edit.text(),
             'api_id': self.api_id_edit.text(),
+            'model_name': self.model_name_edit.text().strip() or None,
             'is_active': 1 if self.active_checkbox.isChecked() else 0
         }
 
@@ -203,13 +212,22 @@ class MainWindow(QMainWindow):
         results_layout = QVBoxLayout()
         
         self.results_table = QTableWidget()
-        self.results_table.setColumnCount(3)
-        self.results_table.setHorizontalHeaderLabels(["Модель", "Ответ", "Выбрать"])
+        self.results_table.setColumnCount(4)
+        self.results_table.setHorizontalHeaderLabels(["Модель", "Ответ", "Открыть", "Выбрать"])
         self.results_table.horizontalHeader().setStretchLastSection(True)
         self.results_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.results_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         self.results_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        self.results_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
         self.results_table.setAlternatingRowColors(True)
+        
+        # Устанавливаем минимальную высоту строк для многострочного отображения
+        self.results_table.verticalHeader().setDefaultSectionSize(100)
+        self.results_table.verticalHeader().setMinimumSectionSize(60)
+        
+        # Включаем перенос текста для ячеек (работает с QTableWidgetItem)
+        # Перенос текста будет работать автоматически благодаря setWordWrap
+        
         results_layout.addWidget(self.results_table)
         
         # Кнопка сохранения
@@ -337,7 +355,7 @@ class MainWindow(QMainWindow):
             
             self.results_table.setItem(row, 0, model_item)
             
-            # Ответ
+            # Ответ - используем QTableWidgetItem с переносом текста
             if result.get('success', False):
                 response_text = result.get('text', '')
             else:
@@ -345,16 +363,41 @@ class MainWindow(QMainWindow):
                 response_text = f"ОШИБКА: {error_msg}"
             
             response_item = QTableWidgetItem(response_text)
+            # Включаем перенос текста
+            response_item.setTextAlignment(Qt.AlignTop | Qt.AlignLeft)
+            
+            # Устанавливаем цвет текста для ошибок
             if not result.get('success', False):
                 response_item.setForeground(Qt.red)
+            
             self.results_table.setItem(row, 1, response_item)
+            
+            # Автоматически подстраиваем высоту строки под содержимое
+            # Подсчитываем примерное количество строк
+            lines = len(response_text.split('\n'))
+            # Учитываем переносы по ширине (примерно 80 символов на строку)
+            char_lines = len(response_text) // 80
+            total_lines = max(lines, char_lines, 3)  # Минимум 3 строки
+            
+            # Устанавливаем высоту строки (примерно 25 пикселей на строку)
+            row_height = min(total_lines * 25 + 10, 400)  # Максимум 400px
+            self.results_table.setRowHeight(row, row_height)
+            
+            # Кнопка "Открыть" (только для успешных ответов)
+            open_button = QPushButton("Открыть")
+            open_button.setEnabled(result.get('success', False))  # Отключаем для ошибок
+            if result.get('success', False):
+                open_button.clicked.connect(lambda checked, r=row: self.open_response_dialog(r))
+            else:
+                open_button.setToolTip("Невозможно открыть ответ с ошибкой")
+            self.results_table.setCellWidget(row, 2, open_button)
             
             # Чекбокс (только для успешных ответов)
             checkbox = QCheckBox()
             checkbox.setChecked(False)
             checkbox.setEnabled(result.get('success', False))  # Отключаем для ошибок
             checkbox.stateChanged.connect(self.on_checkbox_changed)
-            self.results_table.setCellWidget(row, 2, checkbox)
+            self.results_table.setCellWidget(row, 3, checkbox)
         
         # Сохраняем промт в БД, если его там ещё нет
         prompt_text = self.prompt_edit.toPlainText().strip()
@@ -377,6 +420,114 @@ class MainWindow(QMainWindow):
         # Можно добавить логику, если нужно
         pass
     
+    def open_response_dialog(self, row: int):
+        """Открыть диалог с форматированным markdown ответом."""
+        if row < 0 or row >= len(self.temp_results):
+            return
+        
+        result = self.temp_results[row]
+        if not result.get('success', False):
+            QMessageBox.warning(self, "Предупреждение", "Невозможно открыть ответ с ошибкой!")
+            return
+        
+        response_text = result.get('text', '')
+        model_name = result.get('model_name', 'Unknown')
+        
+        # Создаём диалог
+        dialog = QDialog(self)
+        dialog.setWindowTitle(f"Ответ модели: {model_name}")
+        dialog.setModal(True)
+        dialog.resize(800, 600)
+        
+        layout = QVBoxLayout()
+        
+        # Заголовок с названием модели
+        header_label = QLabel(f"<h2>Ответ модели: {model_name}</h2>")
+        layout.addWidget(header_label)
+        
+        # Текстовое поле для отображения markdown
+        text_edit = QTextEdit()
+        text_edit.setReadOnly(True)
+        
+        # Конвертируем markdown в HTML
+        try:
+            html_content = markdown.markdown(
+                response_text,
+                extensions=['extra', 'codehilite', 'nl2br', 'sane_lists']
+            )
+            # Добавляем базовые стили для лучшего отображения
+            styled_html = f"""
+            <style>
+                body {{
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                    font-size: 14px;
+                    line-height: 1.6;
+                    color: #333;
+                    padding: 10px;
+                }}
+                pre {{
+                    background-color: #f4f4f4;
+                    border: 1px solid #ddd;
+                    border-radius: 4px;
+                    padding: 10px;
+                    overflow-x: auto;
+                }}
+                code {{
+                    background-color: #f4f4f4;
+                    padding: 2px 4px;
+                    border-radius: 3px;
+                    font-family: 'Courier New', monospace;
+                }}
+                pre code {{
+                    background-color: transparent;
+                    padding: 0;
+                }}
+                h1, h2, h3, h4, h5, h6 {{
+                    margin-top: 20px;
+                    margin-bottom: 10px;
+                }}
+                ul, ol {{
+                    margin-left: 20px;
+                }}
+                blockquote {{
+                    border-left: 4px solid #ddd;
+                    margin-left: 0;
+                    padding-left: 20px;
+                    color: #666;
+                }}
+                table {{
+                    border-collapse: collapse;
+                    width: 100%;
+                }}
+                th, td {{
+                    border: 1px solid #ddd;
+                    padding: 8px;
+                    text-align: left;
+                }}
+                th {{
+                    background-color: #f2f2f2;
+                }}
+            </style>
+            <body>
+            {html_content}
+            </body>
+            """
+            text_edit.setHtml(styled_html)
+        except Exception as e:
+            # Если не удалось конвертировать markdown, показываем как обычный текст
+            text_edit.setPlainText(response_text)
+            QMessageBox.warning(self, "Предупреждение", f"Ошибка форматирования markdown: {str(e)}")
+        
+        layout.addWidget(text_edit)
+        
+        # Кнопка закрытия
+        button_box = QDialogButtonBox(QDialogButtonBox.Close)
+        button_box.rejected.connect(dialog.reject)
+        layout.addWidget(button_box)
+        
+        dialog.setLayout(layout)
+        dialog.exec_()
+    
     def save_selected_results(self):
         """Сохранить выбранные результаты в БД."""
         if not self.temp_results:
@@ -396,7 +547,7 @@ class MainWindow(QMainWindow):
         # Сохраняем выбранные результаты
         saved_count = 0
         for row in range(self.results_table.rowCount()):
-            checkbox = self.results_table.cellWidget(row, 2)
+            checkbox = self.results_table.cellWidget(row, 3)
             if checkbox and checkbox.isChecked():
                 result = self.temp_results[row]
                 model_id = result.get('model_id')
