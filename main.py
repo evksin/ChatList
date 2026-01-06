@@ -708,14 +708,15 @@ class MainWindow(QMainWindow):
         
         # Таблица промтов
         table = QTableWidget()
-        table.setColumnCount(4)
-        table.setHorizontalHeaderLabels(["ID", "Дата", "Промт", "Теги"])
+        table.setColumnCount(5)
+        table.setHorizontalHeaderLabels(["ID", "Дата", "Промт", "Теги", "Действия"])
         table.setSortingEnabled(True)
-        table.horizontalHeader().setStretchLastSection(True)
+        table.horizontalHeader().setStretchLastSection(False)
         table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
         table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeToContents)
         table.setAlternatingRowColors(True)
         
         def filter_table(text):
@@ -740,22 +741,35 @@ class MainWindow(QMainWindow):
             table.setItem(row, 1, QTableWidgetItem(prompt['date']))
             table.setItem(row, 2, QTableWidgetItem(prompt['prompt']))
             table.setItem(row, 3, QTableWidgetItem(prompt.get('tags', '')))
+            
+            # Кнопки действий для каждой строки
+            actions_layout = QHBoxLayout()
+            actions_widget = QWidget()
+            
+            edit_btn = QPushButton("Изменить")
+            edit_btn.setMaximumWidth(80)
+            edit_btn.clicked.connect(lambda checked, r=row, p_id=prompt['id']: self.edit_prompt_row(table, dialog, r, p_id))
+            actions_layout.addWidget(edit_btn)
+            
+            delete_btn = QPushButton("Удалить")
+            delete_btn.setMaximumWidth(80)
+            delete_btn.clicked.connect(lambda checked, r=row, p_id=prompt['id']: self.delete_prompt_row(table, dialog, r, p_id))
+            actions_layout.addWidget(delete_btn)
+            
+            actions_layout.setContentsMargins(2, 2, 2, 2)
+            actions_layout.setSpacing(2)
+            actions_widget.setLayout(actions_layout)
+            table.setCellWidget(row, 4, actions_widget)
         
         layout.addWidget(table)
         
-        # Кнопки
+        # Кнопки внизу
         buttons_layout = QHBoxLayout()
-        add_btn = QPushButton("Добавить")
+        add_btn = QPushButton("Добавить новый промт")
         add_btn.clicked.connect(lambda: self.add_prompt(dialog))
         buttons_layout.addWidget(add_btn)
         
-        edit_btn = QPushButton("Редактировать")
-        edit_btn.clicked.connect(lambda: self.edit_prompt(table, dialog))
-        buttons_layout.addWidget(edit_btn)
-        
-        delete_btn = QPushButton("Удалить")
-        delete_btn.clicked.connect(lambda: self.delete_prompt(table, dialog))
-        buttons_layout.addWidget(delete_btn)
+        buttons_layout.addStretch()
         
         close_btn = QPushButton("Закрыть")
         close_btn.clicked.connect(dialog.accept)
@@ -776,13 +790,17 @@ class MainWindow(QMainWindow):
             self.manage_prompts()
     
     def edit_prompt(self, table, parent_dialog):
-        """Редактировать промт."""
+        """Редактировать промт (старый метод для совместимости)."""
         current_row = table.currentRow()
         if current_row < 0:
             QMessageBox.warning(self, "Предупреждение", "Выберите промт для редактирования!")
             return
         
         prompt_id = int(table.item(current_row, 0).text())
+        self.edit_prompt_row(table, parent_dialog, current_row, prompt_id)
+    
+    def edit_prompt_row(self, table, parent_dialog, row, prompt_id):
+        """Редактировать промт по строке и ID."""
         prompt_data = self.db.get_prompt(prompt_id)
         
         dialog = PromptDialog(self, prompt_data)
@@ -793,17 +811,23 @@ class MainWindow(QMainWindow):
             self.manage_prompts()
     
     def delete_prompt(self, table, parent_dialog):
-        """Удалить промт."""
+        """Удалить промт (старый метод для совместимости)."""
         current_row = table.currentRow()
         if current_row < 0:
             QMessageBox.warning(self, "Предупреждение", "Выберите промт для удаления!")
             return
         
         prompt_id = int(table.item(current_row, 0).text())
+        self.delete_prompt_row(table, parent_dialog, current_row, prompt_id)
+    
+    def delete_prompt_row(self, table, parent_dialog, row, prompt_id):
+        """Удалить промт по строке и ID."""
+        prompt_text = table.item(row, 2).text() if table.item(row, 2) else ""
+        preview = prompt_text[:50] + "..." if len(prompt_text) > 50 else prompt_text
         
         reply = QMessageBox.question(
             self, "Подтверждение",
-            "Удалить выбранный промт?",
+            f"Удалить промт '{preview}'?",
             QMessageBox.Yes | QMessageBox.No
         )
         
