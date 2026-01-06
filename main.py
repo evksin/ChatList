@@ -11,10 +11,10 @@ from PyQt5.QtWidgets import (
     QLabel, QPushButton, QTextEdit, QTableWidget, QTableWidgetItem,
     QCheckBox, QComboBox, QMenuBar, QMenu, QStatusBar, QMessageBox,
     QDialog, QLineEdit, QDialogButtonBox, QGroupBox, QProgressBar,
-    QHeaderView, QSplitter
+    QHeaderView, QSplitter, QSpinBox
 )
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QIcon
 from db import get_db
 from models import get_model_manager
 
@@ -103,6 +103,172 @@ class ModelDialog(QDialog):
         }
 
 
+class PromptImprovementDialog(QDialog):
+    """Диалог для отображения улучшенных промтов."""
+    
+    def __init__(self, parent=None, original_prompt: str = "", improvement_result: Dict = None):
+        super().__init__(parent)
+        self.setWindowTitle("Улучшенные варианты промта")
+        self.setModal(True)
+        self.resize(800, 600)
+        
+        layout = QVBoxLayout()
+        
+        # Исходный промт
+        original_group = QGroupBox("Исходный промт")
+        original_layout = QVBoxLayout()
+        original_text = QTextEdit()
+        original_text.setReadOnly(True)
+        original_text.setPlainText(original_prompt)
+        original_text.setMaximumHeight(80)
+        original_layout.addWidget(original_text)
+        original_group.setLayout(original_layout)
+        layout.addWidget(original_group)
+        
+        # Улучшенная версия
+        improved_group = QGroupBox("Улучшенная версия")
+        improved_layout = QVBoxLayout()
+        self.improved_text = QTextEdit()
+        self.improved_text.setReadOnly(True)
+        self.improved_text.setPlainText(improvement_result.get('improved', ''))
+        self.improved_text.setMaximumHeight(100)
+        improved_layout.addWidget(self.improved_text)
+        
+        improved_buttons = QHBoxLayout()
+        use_improved_btn = QPushButton("Использовать этот вариант")
+        use_improved_btn.clicked.connect(lambda: self.use_prompt(improvement_result.get('improved', '')))
+        improved_buttons.addWidget(use_improved_btn)
+        
+        copy_improved_btn = QPushButton("Копировать")
+        copy_improved_btn.clicked.connect(lambda: self.copy_to_clipboard(improvement_result.get('improved', '')))
+        improved_buttons.addWidget(copy_improved_btn)
+        improved_layout.addLayout(improved_buttons)
+        improved_group.setLayout(improved_layout)
+        layout.addWidget(improved_group)
+        
+        # Альтернативные варианты
+        alternatives_group = QGroupBox("Альтернативные варианты")
+        alternatives_layout = QVBoxLayout()
+        
+        alternatives = improvement_result.get('alternatives', [])
+        self.alternative_widgets = []
+        
+        for i, alt in enumerate(alternatives):
+            alt_layout = QHBoxLayout()
+            alt_text = QTextEdit()
+            alt_text.setReadOnly(True)
+            alt_text.setPlainText(alt)
+            alt_text.setMaximumHeight(60)
+            alt_layout.addWidget(alt_text)
+            
+            alt_buttons = QHBoxLayout()
+            use_alt_btn = QPushButton(f"Использовать вариант {i+1}")
+            use_alt_btn.clicked.connect(lambda checked, text=alt: self.use_prompt(text))
+            alt_buttons.addWidget(use_alt_btn)
+            
+            copy_alt_btn = QPushButton("Копировать")
+            copy_alt_btn.clicked.connect(lambda checked, text=alt: self.copy_to_clipboard(text))
+            alt_buttons.addWidget(copy_alt_btn)
+            alt_layout.addLayout(alt_buttons)
+            alternatives_layout.addLayout(alt_layout)
+            self.alternative_widgets.append(alt_text)
+        
+        if not alternatives:
+            no_alternatives_label = QLabel("Альтернативные варианты не предоставлены")
+            alternatives_layout.addWidget(no_alternatives_label)
+        
+        alternatives_group.setLayout(alternatives_layout)
+        layout.addWidget(alternatives_group)
+        
+        # Адаптированные версии
+        adaptations = improvement_result.get('adaptations', {})
+        if adaptations:
+            adaptations_group = QGroupBox("Адаптированные версии")
+            adaptations_layout = QVBoxLayout()
+            
+            if 'code' in adaptations:
+                code_layout = QHBoxLayout()
+                code_text = QTextEdit()
+                code_text.setReadOnly(True)
+                code_text.setPlainText(adaptations['code'])
+                code_text.setMaximumHeight(60)
+                code_layout.addWidget(QLabel("Для программирования:"))
+                code_layout.addWidget(code_text)
+                code_buttons = QHBoxLayout()
+                use_code_btn = QPushButton("Использовать")
+                use_code_btn.clicked.connect(lambda: self.use_prompt(adaptations['code']))
+                code_buttons.addWidget(use_code_btn)
+                copy_code_btn = QPushButton("Копировать")
+                copy_code_btn.clicked.connect(lambda: self.copy_to_clipboard(adaptations['code']))
+                code_buttons.addWidget(copy_code_btn)
+                code_layout.addLayout(code_buttons)
+                adaptations_layout.addLayout(code_layout)
+            
+            if 'analysis' in adaptations:
+                analysis_layout = QHBoxLayout()
+                analysis_text = QTextEdit()
+                analysis_text.setReadOnly(True)
+                analysis_text.setPlainText(adaptations['analysis'])
+                analysis_text.setMaximumHeight(60)
+                analysis_layout.addWidget(QLabel("Для анализа:"))
+                analysis_layout.addWidget(analysis_text)
+                analysis_buttons_layout = QHBoxLayout()
+                use_analysis_btn = QPushButton("Использовать")
+                use_analysis_btn.clicked.connect(lambda: self.use_prompt(adaptations['analysis']))
+                analysis_buttons_layout.addWidget(use_analysis_btn)
+                
+                copy_analysis_btn = QPushButton("Копировать")
+                copy_analysis_btn.clicked.connect(lambda: self.copy_to_clipboard(adaptations['analysis']))
+                analysis_buttons_layout.addWidget(copy_analysis_btn)
+                analysis_layout.addLayout(analysis_buttons_layout)
+                adaptations_layout.addLayout(analysis_layout)
+            
+            if 'creative' in adaptations:
+                creative_layout = QHBoxLayout()
+                creative_text = QTextEdit()
+                creative_text.setReadOnly(True)
+                creative_text.setPlainText(adaptations['creative'])
+                creative_text.setMaximumHeight(60)
+                creative_layout.addWidget(QLabel("Для креатива:"))
+                creative_layout.addWidget(creative_text)
+                creative_buttons_layout = QHBoxLayout()
+                use_creative_btn = QPushButton("Использовать")
+                use_creative_btn.clicked.connect(lambda: self.use_prompt(adaptations['creative']))
+                creative_buttons_layout.addWidget(use_creative_btn)
+                
+                copy_creative_btn = QPushButton("Копировать")
+                copy_creative_btn.clicked.connect(lambda: self.copy_to_clipboard(adaptations['creative']))
+                creative_buttons_layout.addWidget(copy_creative_btn)
+                creative_layout.addLayout(creative_buttons_layout)
+                adaptations_layout.addLayout(creative_layout)
+            
+            adaptations_group.setLayout(adaptations_layout)
+            layout.addWidget(adaptations_group)
+        
+        # Кнопка закрытия
+        button_box = QDialogButtonBox(QDialogButtonBox.Close)
+        button_box.rejected.connect(self.reject)
+        layout.addWidget(button_box)
+        
+        self.setLayout(layout)
+        self.selected_prompt = None
+    
+    def use_prompt(self, prompt_text: str):
+        """Использовать выбранный промт."""
+        self.selected_prompt = prompt_text
+        self.accept()
+    
+    def get_selected_prompt(self) -> Optional[str]:
+        """Получить выбранный промт."""
+        return self.selected_prompt
+    
+    def copy_to_clipboard(self, text: str):
+        """Копировать текст в буфер обмена."""
+        clipboard = QApplication.clipboard()
+        clipboard.setText(text)
+        QMessageBox.information(self, "Скопировано", "Текст скопирован в буфер обмена!")
+
+
 class PromptDialog(QDialog):
     """Диалог для добавления/редактирования промта."""
     
@@ -159,9 +325,26 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("ChatList - Сравнение ответов нейросетей")
         self.setGeometry(100, 100, 1200, 800)
         
+        # Устанавливаем иконку приложения
+        import os
+        icon_path = os.path.join(os.path.dirname(__file__), "app.ico")
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
+        
+        # Применяем сохранённые настройки
+        self.load_settings()
+        
         self.init_ui()
         self.load_saved_prompts()
         self.load_models()
+    
+    def load_settings(self):
+        """Загрузить и применить сохранённые настройки."""
+        theme = self.db.get_setting('theme', 'light')
+        self.apply_theme(theme)
+        
+        font_size = int(self.db.get_setting('font_size', '10'))
+        self.apply_font_size(font_size)
     
     def init_ui(self):
         """Инициализация интерфейса."""
@@ -191,10 +374,18 @@ class MainWindow(QMainWindow):
         self.prompt_edit.setMaximumHeight(100)
         prompt_layout.addWidget(self.prompt_edit)
         
-        # Кнопка отправки
+        # Кнопки действий с промтом
+        buttons_layout = QHBoxLayout()
+        self.improve_button = QPushButton("Улучшить промт")
+        self.improve_button.clicked.connect(self.improve_prompt)
+        buttons_layout.addWidget(self.improve_button)
+        
+        buttons_layout.addStretch()
+        
         self.send_button = QPushButton("Отправить запрос")
         self.send_button.clicked.connect(self.send_request)
-        prompt_layout.addWidget(self.send_button)
+        buttons_layout.addWidget(self.send_button)
+        prompt_layout.addLayout(buttons_layout)
         
         prompt_group.setLayout(prompt_layout)
         main_layout.addWidget(prompt_group)
@@ -269,6 +460,10 @@ class MainWindow(QMainWindow):
         # Меню "Настройки"
         settings_menu = menubar.addMenu("Настройки")
         settings_menu.addAction("Настройки программы", self.show_settings)
+        
+        # Меню "Справка"
+        help_menu = menubar.addMenu("Справка")
+        help_menu.addAction("О программе", self.show_about)
     
     def load_saved_prompts(self):
         """Загрузить сохранённые промты в выпадающий список."""
@@ -419,6 +614,73 @@ class MainWindow(QMainWindow):
         """Обработчик изменения чекбоксов."""
         # Можно добавить логику, если нужно
         pass
+    
+    def improve_prompt(self):
+        """Улучшить промт с помощью AI."""
+        from prompt_improver import PromptImprover
+        
+        prompt_text = self.prompt_edit.toPlainText().strip()
+        
+        if not prompt_text:
+            QMessageBox.warning(self, "Предупреждение", "Введите промт для улучшения!")
+            return
+        
+        # Создаём улучшатель промтов
+        improver = PromptImprover(self.db, self.model_manager)
+        
+        # Проверяем, включена ли функция
+        if not improver.is_enabled():
+            reply = QMessageBox.question(
+                self, "Функция отключена",
+                "Функция улучшения промтов отключена в настройках.\n\nХотите открыть настройки?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply == QMessageBox.Yes:
+                self.show_settings()
+            return
+        
+        # Проверяем, выбрана ли модель
+        if not improver.get_improver_model_id():
+            reply = QMessageBox.question(
+                self, "Модель не выбрана",
+                "Модель для улучшения промтов не выбрана в настройках.\n\nХотите открыть настройки?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+            if reply == QMessageBox.Yes:
+                self.show_settings()
+            return
+        
+        # Показываем прогресс
+        self.statusBar.showMessage("Улучшение промта...")
+        self.improve_button.setEnabled(False)
+        self.progress_bar.setVisible(True)
+        self.progress_bar.setRange(0, 0)  # Неопределённый прогресс
+        
+        try:
+            # Улучшаем промт
+            result = improver.improve_prompt(prompt_text)
+            
+            if not result.get('success', False):
+                error_msg = result.get('error', 'Неизвестная ошибка')
+                QMessageBox.warning(self, "Ошибка улучшения промта", error_msg)
+                self.statusBar.showMessage("Ошибка улучшения промта")
+                return
+            
+            # Показываем диалог с результатами
+            dialog = PromptImprovementDialog(self, prompt_text, result)
+            if dialog.exec_() == QDialog.Accepted:
+                selected = dialog.get_selected_prompt()
+                if selected:
+                    self.prompt_edit.setPlainText(selected)
+                    self.statusBar.showMessage("Промт обновлён")
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Произошла ошибка при улучшении промта:\n{str(e)}")
+            self.statusBar.showMessage("Ошибка улучшения промта")
+        finally:
+            self.progress_bar.setVisible(False)
+            self.improve_button.setEnabled(True)
+            self.statusBar.showMessage("Готово")
     
     def open_response_dialog(self, row: int):
         """Открыть диалог с форматированным markdown ответом."""
@@ -951,10 +1213,353 @@ class MainWindow(QMainWindow):
     
     def show_settings(self):
         """Показать настройки программы."""
-        QMessageBox.information(
-            self, "Настройки",
-            "Настройки программы будут реализованы в следующих версиях."
-        )
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Настройки программы")
+        dialog.setModal(True)
+        dialog.resize(500, 500)
+        layout = QVBoxLayout()
+        
+        # Группа настроек внешнего вида
+        appearance_group = QGroupBox("Внешний вид")
+        appearance_layout = QVBoxLayout()
+        
+        # Выбор темы
+        theme_layout = QHBoxLayout()
+        theme_layout.addWidget(QLabel("Тема оформления:"))
+        theme_combo = QComboBox()
+        theme_combo.addItem("Светлая", "light")
+        theme_combo.addItem("Тёмная", "dark")
+        current_theme = self.db.get_setting('theme', 'light')
+        theme_index = theme_combo.findData(current_theme)
+        if theme_index >= 0:
+            theme_combo.setCurrentIndex(theme_index)
+        theme_layout.addWidget(theme_combo)
+        appearance_layout.addLayout(theme_layout)
+        
+        # Выбор размера шрифта
+        font_size_layout = QHBoxLayout()
+        font_size_layout.addWidget(QLabel("Размер шрифта:"))
+        font_size_spinbox = QSpinBox()
+        font_size_spinbox.setRange(8, 20)
+        font_size_spinbox.setValue(int(self.db.get_setting('font_size', '10')))
+        font_size_spinbox.setSuffix(" pt")
+        font_size_layout.addWidget(font_size_spinbox)
+        appearance_layout.addLayout(font_size_layout)
+        
+        appearance_group.setLayout(appearance_layout)
+        layout.addWidget(appearance_group)
+        
+        # Группа настроек улучшения промтов
+        improver_group = QGroupBox("AI-ассистент для улучшения промтов")
+        improver_layout = QVBoxLayout()
+        
+        # Чекбокс включения функции
+        enabled_checkbox = QCheckBox("Включить улучшение промтов")
+        enabled_value = self.db.get_setting('prompt_improver_enabled', 'true')
+        enabled_checkbox.setChecked(enabled_value.lower() in ['true', '1', 'yes'])
+        improver_layout.addWidget(enabled_checkbox)
+        
+        # Выбор модели
+        model_layout = QHBoxLayout()
+        model_layout.addWidget(QLabel("Модель для улучшения промтов:"))
+        model_combo = QComboBox()
+        model_combo.addItem("-- Не выбрана --", None)
+        
+        models = self.db.get_all_models()
+        current_model_id = self.db.get_setting('prompt_improver_model', '')
+        
+        for model in models:
+            model_combo.addItem(f"{model['name']} (ID: {model['id']})", model['id'])
+            if str(model['id']) == current_model_id:
+                model_combo.setCurrentIndex(model_combo.count() - 1)
+        
+        model_layout.addWidget(model_combo)
+        improver_layout.addLayout(model_layout)
+        
+        improver_group.setLayout(improver_layout)
+        layout.addWidget(improver_group)
+        
+        # Кнопки
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        
+        def save_settings():
+            # Сохраняем настройки внешнего вида
+            selected_theme = theme_combo.currentData()
+            self.db.set_setting('theme', selected_theme)
+            
+            font_size = str(font_size_spinbox.value())
+            self.db.set_setting('font_size', font_size)
+            
+            # Сохраняем настройки улучшения промтов
+            enabled = 'true' if enabled_checkbox.isChecked() else 'false'
+            self.db.set_setting('prompt_improver_enabled', enabled)
+            
+            selected_model_id = model_combo.currentData()
+            if selected_model_id:
+                self.db.set_setting('prompt_improver_model', str(selected_model_id))
+            else:
+                self.db.set_setting('prompt_improver_model', '')
+            
+            # Применяем настройки
+            self.apply_theme(selected_theme)
+            self.apply_font_size(int(font_size))
+            
+            QMessageBox.information(dialog, "Успех", "Настройки сохранены!")
+            dialog.accept()
+        
+        buttons.accepted.connect(save_settings)
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+        
+        dialog.setLayout(layout)
+        dialog.exec_()
+    
+    def apply_theme(self, theme: str):
+        """Применить тему оформления."""
+        if theme == 'dark':
+            # Тёмная тема
+            dark_stylesheet = """
+            QMainWindow {
+                background-color: #2b2b2b;
+                color: #ffffff;
+            }
+            QWidget {
+                background-color: #2b2b2b;
+                color: #ffffff;
+            }
+            QGroupBox {
+                background-color: #3c3c3c;
+                color: #ffffff;
+                border: 1px solid #555555;
+                border-radius: 5px;
+                margin-top: 10px;
+                padding-top: 10px;
+                font-weight: bold;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px;
+            }
+            QLabel {
+                background-color: transparent;
+                color: #ffffff;
+            }
+            QTextEdit, QLineEdit {
+                background-color: #3c3c3c;
+                color: #ffffff;
+                border: 1px solid #555555;
+                border-radius: 3px;
+                padding: 5px;
+            }
+            QTextEdit:focus, QLineEdit:focus {
+                border: 1px solid #0078d4;
+            }
+            QPushButton {
+                background-color: #0078d4;
+                color: #ffffff;
+                border: none;
+                border-radius: 3px;
+                padding: 5px 15px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #106ebe;
+            }
+            QPushButton:pressed {
+                background-color: #005a9e;
+            }
+            QPushButton:disabled {
+                background-color: #555555;
+                color: #888888;
+            }
+            QComboBox {
+                background-color: #3c3c3c;
+                color: #ffffff;
+                border: 1px solid #555555;
+                border-radius: 3px;
+                padding: 5px;
+            }
+            QComboBox:hover {
+                border: 1px solid #0078d4;
+            }
+            QComboBox::drop-down {
+                border: none;
+                width: 20px;
+            }
+            QComboBox::down-arrow {
+                image: none;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-top: 5px solid #ffffff;
+                margin-right: 5px;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #3c3c3c;
+                color: #ffffff;
+                selection-background-color: #0078d4;
+                border: 1px solid #555555;
+            }
+            QCheckBox {
+                background-color: transparent;
+                color: #ffffff;
+            }
+            QCheckBox::indicator {
+                width: 18px;
+                height: 18px;
+                border: 2px solid #555555;
+                border-radius: 3px;
+                background-color: #3c3c3c;
+            }
+            QCheckBox::indicator:checked {
+                background-color: #0078d4;
+                border-color: #0078d4;
+            }
+            QTableWidget {
+                background-color: #3c3c3c;
+                color: #ffffff;
+                border: 1px solid #555555;
+                gridline-color: #555555;
+                selection-background-color: #0078d4;
+            }
+            QTableWidget::item {
+                background-color: #3c3c3c;
+                color: #ffffff;
+                padding: 5px;
+            }
+            QTableWidget::item:selected {
+                background-color: #0078d4;
+                color: #ffffff;
+            }
+            QTableWidget::item:alternate {
+                background-color: #353535;
+            }
+            QHeaderView::section {
+                background-color: #2b2b2b;
+                color: #ffffff;
+                padding: 5px;
+                border: 1px solid #555555;
+                font-weight: bold;
+            }
+            QMenuBar {
+                background-color: #2b2b2b;
+                color: #ffffff;
+                border-bottom: 1px solid #555555;
+            }
+            QMenuBar::item {
+                background-color: transparent;
+                padding: 5px 10px;
+            }
+            QMenuBar::item:selected {
+                background-color: #3c3c3c;
+            }
+            QMenu {
+                background-color: #3c3c3c;
+                color: #ffffff;
+                border: 1px solid #555555;
+            }
+            QMenu::item:selected {
+                background-color: #0078d4;
+            }
+            QStatusBar {
+                background-color: #2b2b2b;
+                color: #ffffff;
+                border-top: 1px solid #555555;
+            }
+            QProgressBar {
+                background-color: #3c3c3c;
+                border: 1px solid #555555;
+                border-radius: 3px;
+                text-align: center;
+                color: #ffffff;
+            }
+            QProgressBar::chunk {
+                background-color: #0078d4;
+                border-radius: 2px;
+            }
+            QDialog {
+                background-color: #2b2b2b;
+                color: #ffffff;
+            }
+            QSpinBox {
+                background-color: #3c3c3c;
+                color: #ffffff;
+                border: 1px solid #555555;
+                border-radius: 3px;
+                padding: 5px;
+            }
+            QSpinBox:focus {
+                border: 1px solid #0078d4;
+            }
+            QSpinBox::up-button, QSpinBox::down-button {
+                background-color: #555555;
+                border: none;
+                width: 20px;
+            }
+            QSpinBox::up-button:hover, QSpinBox::down-button:hover {
+                background-color: #666666;
+            }
+            QSpinBox::up-arrow, QSpinBox::down-arrow {
+                width: 0;
+                height: 0;
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+            }
+            QSpinBox::up-arrow {
+                border-bottom: 6px solid #ffffff;
+            }
+            QSpinBox::down-arrow {
+                border-top: 6px solid #ffffff;
+            }
+            """
+            self.setStyleSheet(dark_stylesheet)
+        else:
+            # Светлая тема (по умолчанию) - сбрасываем стили
+            self.setStyleSheet("")
+    
+    def apply_font_size(self, size: int):
+        """Применить размер шрифта."""
+        font = QFont()
+        font.setPointSize(size)
+        self.setFont(font)
+        # Применяем шрифт ко всем виджетам
+        for widget in self.findChildren(QWidget):
+            widget.setFont(font)
+    
+    def _apply_theme_to_widget(self, widget: QWidget, theme: str):
+        """Рекурсивно применить тему к виджету и его дочерним элементам."""
+        if theme == 'dark':
+            # Стили уже применены через setStyleSheet главного окна
+            # Но для некоторых виджетов может потребоваться дополнительная настройка
+            pass
+    
+    def show_about(self):
+        """Показать информацию о программе."""
+        about_text = """
+        <h2>ChatList</h2>
+        <p><b>Версия:</b> 1.0.0</p>
+        <p><b>Описание:</b></p>
+        <p>ChatList — это приложение для сравнения ответов различных AI-моделей на один и тот же промт.</p>
+        <p>Программа позволяет:</p>
+        <ul>
+            <li>Отправлять промты в несколько нейросетей одновременно</li>
+            <li>Сравнивать ответы разных моделей</li>
+            <li>Сохранять лучшие результаты в базу данных</li>
+            <li>Улучшать промты с помощью AI-ассистента</li>
+            <li>Экспортировать результаты в Markdown и JSON</li>
+        </ul>
+        <p><b>Технологии:</b></p>
+        <ul>
+            <li>Python 3.12+</li>
+            <li>PyQt5</li>
+            <li>SQLite</li>
+            <li>OpenRouter API</li>
+        </ul>
+        <p><b>Разработчик:</b> ChatList Team</p>
+        <p><b>Лицензия:</b> MIT</p>
+        """
+        
+        QMessageBox.about(self, "О программе", about_text)
 
 
 def main():

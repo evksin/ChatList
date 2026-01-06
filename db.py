@@ -105,7 +105,10 @@ class Database:
             'max_response_length': '10000',
             'auto_save': 'false',
             'theme': 'light',
-            'export_format': 'markdown'
+            'font_size': '10',
+            'export_format': 'markdown',
+            'prompt_improver_enabled': 'true',
+            'prompt_improver_model': ''  # Пустое значение - модель не выбрана
         }
         
         cursor = self.conn.cursor()

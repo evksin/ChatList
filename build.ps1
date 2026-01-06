@@ -30,9 +30,10 @@ if (Test-Path "PyQtApp.spec") {
 # --onefile - creates single executable file
 # --windowed - hides console window (for GUI applications)
 # --name - output file name
+# --icon - path to icon file
 # --hidden-import - explicitly specify hidden imports
 Write-Host "`nStarting build..." -ForegroundColor Green
-pyinstaller --onefile --windowed --name "ChatList" --hidden-import=markdown --hidden-import=dotenv main.py
+pyinstaller --onefile --windowed --name "ChatList" --icon=app.ico --hidden-import=markdown --hidden-import=dotenv main.py
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "`nBuild completed successfully!" -ForegroundColor Green
