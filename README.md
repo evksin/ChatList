@@ -192,21 +192,50 @@ ChatList/
 - Groq
 - Любые другие API, совместимые с форматом OpenAI
 
-## Сборка исполняемого файла
+## Разработка
 
-Для создания исполняемого файла используйте PyInstaller:
+### Запуск во время разработки
 
-```bash
+Для разработки запускайте приложение напрямую из Python (не нужно пересобирать при каждом изменении):
+
+```powershell
+python main.py
+```
+
+Или с виртуальным окружением:
+
+```powershell
+.\venv\Scripts\Activate.ps1
+python main.py
+```
+
+**Важно:** Пересборка требуется только перед распространением приложения. Подробнее см. [DEVELOPMENT.md](DEVELOPMENT.md).
+
+## Сборка для распространения
+
+### Полная сборка (исполняемый файл + инсталлятор)
+
+```powershell
+.\build_all.ps1
+```
+
+### Только исполняемый файл
+
+```powershell
 .\build.ps1
 ```
 
-Или вручную:
+Исполняемый файл будет создан в папке `dist/` с именем `ChatList-v{version}.exe`.
 
-```bash
-pyinstaller --onefile --windowed --name "ChatList" main.py
+### Создание инсталлятора
+
+Требуется Inno Setup. Подробнее см. [INSTALLER_README.md](INSTALLER_README.md).
+
+```powershell
+.\build_installer.ps1
 ```
 
-Исполняемый файл будет создан в папке `dist/`.
+Инсталлятор будет создан в папке `installer/`.
 
 ## Разработка
 

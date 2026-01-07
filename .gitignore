@@ -53,3 +53,7 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Installer
+installer/
+setup_temp.iss
