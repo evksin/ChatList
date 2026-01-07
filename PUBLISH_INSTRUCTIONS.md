@@ -52,6 +52,7 @@
 4. GitHub Actions автоматически запустится при следующем push в ветку `main`
 
 5. Чтобы запустить вручную:
+
    - Перейдите в **Actions** → **Deploy GitHub Pages**
    - Нажмите **Run workflow** → **Run workflow**
 

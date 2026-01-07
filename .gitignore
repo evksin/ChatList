@@ -57,3 +57,6 @@ Thumbs.db
 # Installer
 installer/
 setup_temp.iss
+
+# GitHub Pages (optional - uncomment if you don't want to track docs/)
+# docs/

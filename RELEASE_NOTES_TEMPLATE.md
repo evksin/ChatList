@@ -43,16 +43,16 @@
 ## 📥 Скачать
 
 ### Установщик (рекомендуется)
-[ChatList-Setup-v1.0.0.exe](https://github.com/yourusername/chatlist/releases/download/v1.0.0/ChatList-Setup-v1.0.0.exe)
+[ChatList-Setup-v1.0.0.exe](https://github.com/evksin/ChatList/releases/download/v1.0.0/ChatList-Setup-v1.0.0.exe)
 
 ### Исполняемый файл
-[ChatList-v1.0.0.exe](https://github.com/yourusername/chatlist/releases/download/v1.0.0/ChatList-v1.0.0.exe)
+[ChatList-v1.0.0.exe](https://github.com/evksin/ChatList/releases/download/v1.0.0/ChatList-v1.0.0.exe)
 
 ## 📚 Документация
 
-- [README.md](https://github.com/YOUR_USERNAME/YOUR_REPO/blob/main/README.md)
-- [INSTALLER_README.md](https://github.com/YOUR_USERNAME/YOUR_REPO/blob/main/INSTALLER_README.md)
-- [DEVELOPMENT.md](https://github.com/YOUR_USERNAME/YOUR_REPO/blob/main/DEVELOPMENT.md)
+- [README.md](https://github.com/evksin/ChatList/blob/main/README.md)
+- [INSTALLER_README.md](https://github.com/evksin/ChatList/blob/main/INSTALLER_README.md)
+- [DEVELOPMENT.md](https://github.com/evksin/ChatList/blob/main/DEVELOPMENT.md)
 
 ## 🙏 Благодарности
 
@@ -60,5 +60,5 @@
 
 ---
 
-**Полный список изменений:** [CHANGELOG.md](https://github.com/YOUR_USERNAME/YOUR_REPO/blob/main/CHANGELOG.md)
+**Полный список изменений:** [CHANGELOG.md](https://github.com/evksin/ChatList/blob/main/CHANGELOG.md)
 
