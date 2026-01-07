@@ -15,8 +15,13 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QTimer
 from PyQt5.QtGui import QFont, QIcon
+import logging
 from db import get_db
 from models import get_model_manager
+from version import __version__
+
+# Настройка логирования
+logger = logging.getLogger(__name__)
 
 
 class RequestThread(QThread):
@@ -322,7 +327,7 @@ class MainWindow(QMainWindow):
         self.temp_results = []  # Временная таблица результатов в памяти
         self.request_thread = None
         
-        self.setWindowTitle("ChatList - Сравнение ответов нейросетей")
+        self.setWindowTitle(f"ChatList v{__version__} - Сравнение ответов нейросетей")
         self.setGeometry(100, 100, 1200, 800)
         
         # Устанавливаем иконку приложения
@@ -1535,9 +1540,9 @@ class MainWindow(QMainWindow):
     
     def show_about(self):
         """Показать информацию о программе."""
-        about_text = """
+        about_text = f"""
         <h2>ChatList</h2>
-        <p><b>Версия:</b> 1.0.0</p>
+        <p><b>Версия:</b> {__version__}</p>
         <p><b>Описание:</b></p>
         <p>ChatList — это приложение для сравнения ответов различных AI-моделей на один и тот же промт.</p>
         <p>Программа позволяет:</p>
@@ -1564,6 +1569,7 @@ class MainWindow(QMainWindow):
 
 def main():
     """Главная функция приложения."""
+    logger.info(f"Starting ChatList v{__version__}")
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
