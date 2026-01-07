@@ -1,0 +1,420 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="ChatList - приложение для сравнения ответов различных AI-моделей. Отправляйте один промпт в несколько нейросетей одновременно."
+    />
+    <meta
+      name="keywords"
+      content="AI, нейросети, ChatGPT, сравнение, промпты, ChatList"
+    />
+    <title>ChatList - Сравнение ответов нейросетей</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      header {
+        background: rgba(255, 255, 255, 0.95);
+        padding: 2rem 0;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        margin-bottom: 2rem;
+      }
+
+      .header-content {
+        text-align: center;
+      }
+
+      h1 {
+        font-size: 3rem;
+        color: #667eea;
+        margin-bottom: 0.5rem;
+        font-weight: 700;
+      }
+
+      .subtitle {
+        font-size: 1.3rem;
+        color: #666;
+        margin-bottom: 1rem;
+      }
+
+      .version {
+        display: inline-block;
+        background: #667eea;
+        color: white;
+        padding: 0.3rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+      }
+
+      .main-content {
+        background: rgba(255, 255, 255, 0.95);
+        padding: 3rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+      }
+
+      .download-section {
+        text-align: center;
+        padding: 2rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 10px;
+        color: white;
+        margin-bottom: 2rem;
+      }
+
+      .download-button {
+        display: inline-block;
+        background: white;
+        color: #667eea;
+        padding: 1rem 2.5rem;
+        text-decoration: none;
+        border-radius: 50px;
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin: 0.5rem;
+        transition: transform 0.3s, box-shadow 0.3s;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      }
+
+      .download-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+      }
+
+      .download-button.secondary {
+        background: transparent;
+        color: white;
+        border: 2px solid white;
+      }
+
+      .download-button.secondary:hover {
+        background: white;
+        color: #667eea;
+      }
+
+      .features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin: 2rem 0;
+      }
+
+      .feature-card {
+        background: #f8f9fa;
+        padding: 2rem;
+        border-radius: 10px;
+        border-left: 4px solid #667eea;
+        transition: transform 0.3s, box-shadow 0.3s;
+      }
+
+      .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .feature-card h3 {
+        color: #667eea;
+        margin-bottom: 1rem;
+        font-size: 1.5rem;
+      }
+
+      .feature-card ul {
+        list-style: none;
+        padding-left: 0;
+      }
+
+      .feature-card li {
+        padding: 0.5rem 0;
+        padding-left: 1.5rem;
+        position: relative;
+      }
+
+      .feature-card li:before {
+        content: "✓";
+        position: absolute;
+        left: 0;
+        color: #667eea;
+        font-weight: bold;
+      }
+
+      .section {
+        margin: 3rem 0;
+      }
+
+      .section h2 {
+        color: #667eea;
+        margin-bottom: 1.5rem;
+        font-size: 2rem;
+        border-bottom: 3px solid #667eea;
+        padding-bottom: 0.5rem;
+      }
+
+      .tech-stack {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+
+      .tech-badge {
+        background: #667eea;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+      }
+
+      footer {
+        text-align: center;
+        padding: 2rem;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 10px;
+        color: #666;
+      }
+
+      .github-link {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .github-link:hover {
+        text-decoration: underline;
+      }
+
+      @media (max-width: 768px) {
+        h1 {
+          font-size: 2rem;
+        }
+
+        .subtitle {
+          font-size: 1rem;
+        }
+
+        .main-content {
+          padding: 1.5rem;
+        }
+
+        .download-button {
+          display: block;
+          margin: 0.5rem 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <div class="header-content">
+          <h1>ChatList</h1>
+          <p class="subtitle">Сравнение ответов нейросетей</p>
+          <span class="version">v1.0.0</span>
+        </div>
+      </header>
+
+      <div class="download-section">
+        <h2 style="color: white; margin-bottom: 1rem">Скачать ChatList</h2>
+        <p style="margin-bottom: 1.5rem; font-size: 1.1rem">
+          Установите последнюю версию приложения
+        </p>
+        <a
+          href="https://github.com/evksin/ChatList/releases/latest"
+          class="download-button"
+        >
+          📥 Скачать установщик
+        </a>
+        <a
+          href="https://github.com/evksin/ChatList"
+          class="download-button secondary"
+        >
+          🔗 GitHub
+        </a>
+      </div>
+
+      <div class="main-content">
+        <div class="section">
+          <h2>О программе</h2>
+          <p style="font-size: 1.1rem; margin-bottom: 1rem">
+            ChatList — это удобное приложение для сравнения ответов различных
+            AI-моделей. Отправляйте один и тот же промпт в несколько нейросетей
+            одновременно и сравнивайте их ответы в удобной таблице.
+          </p>
+          <p>
+            Приложение поддерживает работу с OpenAI, DeepSeek, Groq, OpenRouter
+            и другими провайдерами AI-моделей.
+          </p>
+        </div>
+
+        <div class="section">
+          <h2>Основные возможности</h2>
+          <div class="features">
+            <div class="feature-card">
+              <h3>🚀 Множественные запросы</h3>
+              <ul>
+                <li>Отправка промпта в несколько моделей одновременно</li>
+                <li>Сравнение ответов в реальном времени</li>
+                <li>Сохранение лучших результатов</li>
+              </ul>
+            </div>
+
+            <div class="feature-card">
+              <h3>💾 Управление данными</h3>
+              <ul>
+                <li>Сохранение промптов и результатов</li>
+                <li>Управление моделями и настройками</li>
+                <li>Поиск и сортировка по таблицам</li>
+              </ul>
+            </div>
+
+            <div class="feature-card">
+              <h3>🤖 AI-ассистент</h3>
+              <ul>
+                <li>Улучшение промптов с помощью AI</li>
+                <li>Генерация альтернативных вариантов</li>
+                <li>Адаптация для разных задач</li>
+              </ul>
+            </div>
+
+            <div class="feature-card">
+              <h3>🎨 Настройка интерфейса</h3>
+              <ul>
+                <li>Светлая и тёмная тема</li>
+                <li>Настройка размера шрифта</li>
+                <li>Удобный просмотр Markdown</li>
+              </ul>
+            </div>
+
+            <div class="feature-card">
+              <h3>📊 Экспорт данных</h3>
+              <ul>
+                <li>Экспорт результатов в Markdown</li>
+                <li>Экспорт в JSON</li>
+                <li>Копирование в буфер обмена</li>
+              </ul>
+            </div>
+
+            <div class="feature-card">
+              <h3>🔒 Безопасность</h3>
+              <ul>
+                <li>Хранение API-ключей в .env файле</li>
+                <li>Локальное хранение данных</li>
+                <li>Поддержка VPN и прокси</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Технологии</h2>
+          <p>ChatList разработан с использованием современных технологий:</p>
+          <div class="tech-stack">
+            <span class="tech-badge">Python 3.12</span>
+            <span class="tech-badge">PyQt5</span>
+            <span class="tech-badge">SQLite</span>
+            <span class="tech-badge">Requests</span>
+            <span class="tech-badge">Markdown</span>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Установка</h2>
+          <ol style="padding-left: 2rem; line-height: 2">
+            <li>
+              Скачайте установщик с
+              <a
+                href="https://github.com/evksin/ChatList/releases/latest"
+                class="github-link"
+                >GitHub Releases</a
+              >
+            </li>
+            <li>Запустите файл <code>ChatList-Setup-v1.0.0.exe</code></li>
+            <li>Следуйте инструкциям установщика</li>
+            <li>
+              Настройте API-ключи в файле <code>.env</code> (см. документацию)
+            </li>
+          </ol>
+        </div>
+
+        <div class="section">
+          <h2>Документация</h2>
+          <p>Подробная документация доступна в репозитории:</p>
+          <ul style="padding-left: 2rem; line-height: 2">
+            <li>
+              <a
+                href="https://github.com/evksin/ChatList/blob/main/README.md"
+                class="github-link"
+                >README.md</a
+              >
+              - Основная документация
+            </li>
+            <li>
+              <a
+                href="https://github.com/evksin/ChatList/blob/main/INSTALLER_README.md"
+                class="github-link"
+                >INSTALLER_README.md</a
+              >
+              - Инструкция по установке
+            </li>
+            <li>
+              <a
+                href="https://github.com/evksin/ChatList/blob/main/DEVELOPMENT.md"
+                class="github-link"
+                >DEVELOPMENT.md</a
+              >
+              - Руководство для разработчиков
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <footer>
+        <p><strong>ChatList</strong> - Сравнение ответов нейросетей</p>
+        <p style="margin-top: 1rem">
+          <a href="https://github.com/evksin/ChatList" class="github-link"
+            >GitHub Repository</a
+          >
+          |
+          <a
+            href="https://github.com/evksin/ChatList/releases"
+            class="github-link"
+            >Releases</a
+          >
+          |
+          <a
+            href="https://github.com/evksin/ChatList/issues"
+            class="github-link"
+            >Issues</a
+          >
+        </p>
+        <p style="margin-top: 1rem; font-size: 0.9rem; color: #999">
+          Лицензия: MIT | Разработано с ❤️ для удобного сравнения AI-моделей
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>
+

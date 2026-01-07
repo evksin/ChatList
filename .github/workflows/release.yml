@@ -1,0 +1,56 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Get version
+      id: version
+      run: |
+        $version = python -c "from version import __version__; print(__version__)"
+        echo "version=$version" >> $env:GITHUB_OUTPUT
+        echo "Version: $version"
+      shell: pwsh
+    
+    - name: Build executable
+      run: |
+        .\build.ps1
+      shell: pwsh
+    
+    - name: Build installer
+      run: |
+        .\build_installer.ps1
+      shell: pwsh
+      continue-on-error: true
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          dist/ChatList-v${{ steps.version.outputs.version }}.exe
+          installer/ChatList-Setup-v${{ steps.version.outputs.version }}.exe
+        body_path: RELEASE_NOTES_TEMPLATE.md
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
