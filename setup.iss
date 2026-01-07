@@ -59,10 +59,11 @@ Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}"; Fil
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
-Type: filesandordirs; Name: "{app}\logs"
-Type: filesandordirs; Name: "{app}\*.db"
+; Удаление файлов из папки установки (если они там есть)
 Type: filesandordirs; Name: "{app}\*.log"
 Type: dirifempty; Name: "{app}"
+; Примечание: Логи и база данных теперь хранятся в %LocalAppData%\ChatList
+; и удаляются через секцию [Code] с подтверждением пользователя
 
 [Code]
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);

@@ -29,8 +29,17 @@ if (-not (Test-Path $innoSetupPath)) {
 }
 if (-not (Test-Path $innoSetupPath)) {
     Write-Host "`nError: Inno Setup not found!" -ForegroundColor Red
-    Write-Host "Please install Inno Setup from: https://jrsoftware.org/isinfo.php" -ForegroundColor Yellow
-    Write-Host "Expected path: $innoSetupPath" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "To create an installer, you need to install Inno Setup:" -ForegroundColor Yellow
+    Write-Host "  1. Download from: https://jrsoftware.org/isinfo.php" -ForegroundColor Cyan
+    Write-Host "  2. Install Inno Setup (version 6.x recommended)" -ForegroundColor Cyan
+    Write-Host "  3. Run this script again" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "For detailed instructions, see: INSTALL_INNO_SETUP.md" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "Note: You can still use the executable file without an installer:" -ForegroundColor Cyan
+    Write-Host "  dist\$exeName.exe" -ForegroundColor Green
+    Write-Host ""
     exit 1
 }
 

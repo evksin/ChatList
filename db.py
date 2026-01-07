@@ -5,8 +5,30 @@
 
 import sqlite3
 import os
+import sys
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime
+
+
+def get_user_data_dir() -> str:
+    """
+    Получить путь к пользовательской директории для данных приложения.
+    
+    Returns:
+        Путь к директории для хранения данных пользователя
+    """
+    if sys.platform == "win32":
+        # Windows: %LocalAppData%\ChatList
+        app_data_dir = os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")), "ChatList")
+    else:
+        # Linux/Mac: ~/.chatlist
+        app_data_dir = os.path.join(os.path.expanduser("~"), ".chatlist")
+    
+    # Создаём директорию, если её нет
+    if not os.path.exists(app_data_dir):
+        os.makedirs(app_data_dir, exist_ok=True)
+    
+    return app_data_dir
 
 
 class Database:
@@ -393,10 +415,19 @@ class Database:
 _db_instance = None
 
 
-def get_db(db_path: str = "chatlist.db") -> Database:
-    """Получить экземпляр базы данных (singleton)."""
+def get_db(db_path: Optional[str] = None) -> Database:
+    """
+    Получить экземпляр базы данных (singleton).
+    
+    Args:
+        db_path: Путь к файлу базы данных. Если не указан, используется путь в пользовательской директории.
+    """
     global _db_instance
     if _db_instance is None:
+        if db_path is None:
+            # Используем пользовательскую директорию для базы данных
+            user_data_dir = get_user_data_dir()
+            db_path = os.path.join(user_data_dir, "chatlist.db")
         _db_instance = Database(db_path)
     return _db_instance
 

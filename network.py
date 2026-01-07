@@ -16,12 +16,29 @@ from urllib3.exceptions import SSLError as Urllib3SSLError
 
 # Настройка логирования
 import os
+import sys
 from datetime import datetime
 
-# Создаём папку для логов, если её нет
-log_dir = "logs"
+# Импортируем функцию для получения пользовательской директории
+try:
+    from db import get_user_data_dir
+except ImportError:
+    # Если db.py ещё не загружен, определяем функцию здесь
+    def get_user_data_dir():
+        if sys.platform == "win32":
+            app_data_dir = os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")), "ChatList")
+        else:
+            app_data_dir = os.path.join(os.path.expanduser("~"), ".chatlist")
+        if not os.path.exists(app_data_dir):
+            os.makedirs(app_data_dir, exist_ok=True)
+        return app_data_dir
+
+# Создаём папку для логов в пользовательской директории
+# Используем %LocalAppData%\ChatList\logs для избежания проблем с правами доступа
+user_data_dir = get_user_data_dir()
+log_dir = os.path.join(user_data_dir, "logs")
 if not os.path.exists(log_dir):
-    os.makedirs(log_dir)
+    os.makedirs(log_dir, exist_ok=True)
 
 # Настройка логирования в файл и консоль
 log_file = os.path.join(log_dir, f"chatlist_{datetime.now().strftime('%Y%m%d')}.log")

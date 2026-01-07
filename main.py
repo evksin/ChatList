@@ -611,7 +611,7 @@ class MainWindow(QMainWindow):
         if error_count > 0:
             QMessageBox.warning(
                 self, "Предупреждение",
-                f"Некоторые запросы завершились с ошибками.\n\n{status_msg}\n\nПроверьте логи в папке logs/ для подробностей."
+                f"Некоторые запросы завершились с ошибками.\n\n{status_msg}\n\nПроверьте логи в папке %LocalAppData%\\ChatList\\logs для подробностей."
             )
         self.statusBar.showMessage(status_msg)
     

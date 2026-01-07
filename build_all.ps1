@@ -45,10 +45,14 @@ if (-not $SkipInstaller) {
     & .\build_installer.ps1
     
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "`nError: Installer build failed!" -ForegroundColor Red
-        exit 1
+        Write-Host "`nWarning: Installer build failed!" -ForegroundColor Yellow
+        Write-Host "This is usually because Inno Setup is not installed." -ForegroundColor Yellow
+        Write-Host "You can still use the executable file: dist\ChatList-v$version.exe" -ForegroundColor Cyan
+        Write-Host "To create an installer, install Inno Setup from: https://jrsoftware.org/isinfo.php" -ForegroundColor Yellow
+        Write-Host ""
+    } else {
+        Write-Host ""
     }
-    Write-Host ""
 } else {
     Write-Host "Step 2: Skipped (installer build)" -ForegroundColor Yellow
     Write-Host ""
