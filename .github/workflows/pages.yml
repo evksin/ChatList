@@ -32,6 +32,8 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: '.'
+          # Upload only necessary files for Pages (index.html and other static assets)
+          # GitHub Pages will automatically use index.html as the main page
 
       - name: Deploy to GitHub Pages
         id: deployment
