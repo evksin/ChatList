@@ -59,3 +59,4 @@ python -c "import requests; r = requests.get('https://openrouter.ai/api/v1/model
 
 **Используйте Python 3.12** - это самое простое и правильное решение. Python 3.9 с OpenSSL 1.1.1l устарел и может иметь проблемы с современными SSL соединениями.
 
+

@@ -34,3 +34,4 @@ Write-Host "1. Обновить Windows через Центр обновлени
 Write-Host "2. Проверить настройки прокси/файрвола" -ForegroundColor White
 Write-Host "3. Временно отключить проверку SSL (не рекомендуется)" -ForegroundColor White
 
+

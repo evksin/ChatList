@@ -109,3 +109,4 @@ python -c "import certifi; print(certifi.where())"
 - [Документация requests по SSL](https://requests.readthedocs.io/en/latest/user/advanced/#ssl-cert-verification)
 - [OpenRouter API документация](https://openrouter.ai/docs)
 
+

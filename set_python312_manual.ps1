@@ -20,3 +20,4 @@ $newPath = "$python312;$python312Scripts;" + ($pathArray -join ';')
 Write-Host "Python 3.12 set as default!" -ForegroundColor Green
 Write-Host "Restart PowerShell and run: python --version" -ForegroundColor Yellow
 
+
